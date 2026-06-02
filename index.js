@@ -59,10 +59,10 @@ app.post("/login", (req, res) => {
 
 app.post("/register", (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password , phone,email,address,gender } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({ message: "Username and password are required" });
+    if (!username || !password || !phone || !email || !address || !gender) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
     if (findUser(username)) {

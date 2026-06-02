@@ -20,11 +20,10 @@ const autoIncrementId = () => {
 const getusers = () => users;
 
 const addUser = (user) =>{
-    const newUser = {id: autoIncrementId(), username: user.username, password: hashPassword(user.password)};
+    const newUser = {id: autoIncrementId(), username: user.username, password: hashPassword(user.password), phone : user.phone, email: user.email,address:user.address, gender: user.gender};
     users.push(newUser);
     return newUser;
 }
-console.log(users);
 
 const findUser = (username)=>users.find(user=>user.username === username);
 
