@@ -25,6 +25,6 @@ const addUser = (user) =>{
     return newUser;
 }
 
-const findUser = (username)=>users.find(user=>user.username === username);
+const findUser = (email)=>users.find(user=>user.email === email);
 
 export {getusers,addUser,findUser,verifyPassword};

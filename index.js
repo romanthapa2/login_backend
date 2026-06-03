@@ -4,6 +4,7 @@ import helmet from "helmet";
 import dotenv from "dotenv";
 import { addUser, findUser, getusers, verifyPassword } from "./users_data.js";
 import jwt from "jsonwebtoken";
+import {loginSchema,registerSchema} from "./validation_using_zod.js";
 
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -26,22 +27,24 @@ app.get("/", (req, res) => {
 
 app.post("/login", (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({ message: "Username and password are required" });
+    const validateData = loginSchema.safeParse(req.body);
+
+    if(!validateData.success){
+      return res.status(400).json({message: "email and password are required and must be valid"})
     }
 
-    const existingUser = findUser(username);
+    const existingUser = findUser(email);
 
     if (!existingUser || !verifyPassword(password, existingUser.password)) {
-      return res.status(401).json({ message: "Invalid username or password" });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
     const token = jwt.sign(
       {
         id: existingUser.id,
-        username: existingUser.username,
+        email: existingUser.email,
       },
       JWT_SECRET,
       { expiresIn: "1d" },
@@ -49,7 +52,7 @@ app.post("/login", (req, res) => {
 
     res.json({
       message: "Login successful",
-      user: { id: existingUser.id, username: existingUser.username },
+      user: { id: existingUser.id, email: existingUser.email },
       token,
     });
   } catch (error) {
@@ -59,22 +62,26 @@ app.post("/login", (req, res) => {
 
 app.post("/register", (req, res) => {
   try {
-    const { username, password , phone,email,address,gender } = req.body;
+    const { email, password } = req.body;
 
-    if (!username || !password || !phone || !email || !address || !gender) {
-      return res.status(400).json({ message: "All fields are required" });
+    const validateData = registerSchema.safeParse(req.body);
+    console.log(validateData);
+
+    if (!validateData.success){
+        return res.status(400).json({message: "All fields are required and must be valid"}
+          ,{other: validateData.error.message})
     }
 
-    if (findUser(username)) {
-      return res.status(400).json({ message: "Username already exists" });
+    if (findUser(email)) {
+      return res.status(400).json({ message: "email already exists" });
     }
 
-    const newUser = addUser({ username, password });
+    const newUser = addUser({ email, password });
 
     const token = jwt.sign(
       {
         id: newUser.id,
-        username: newUser.username,
+        email: newUser.email,
       },
       JWT_SECRET,
       { expiresIn: "1d" },
@@ -82,7 +89,7 @@ app.post("/register", (req, res) => {
 
     res.status(201).json({
       message: "User registered successfully",
-      user: { id: newUser.id, username: newUser.username },
+      user: { id: newUser.id, email: newUser.email },
       token
     });
   } catch (error) {
