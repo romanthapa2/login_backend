@@ -1,13 +1,16 @@
 import express from "express";
+
 import cors from "cors";
 import helmet from "helmet";
 import dotenv from "dotenv";
-import { addUser, findUser, getusers, verifyPassword } from "./users_data.js";
 import jwt from "jsonwebtoken";
-import {loginSchema,registerSchema} from "./validation_using_zod.js";
+import { loginSchema, registerSchema } from "./validation_using_zod";
+import { prisma } from "./prisma";
+import { hashPassword, verifyPassword } from "./users_data";
+
 
 dotenv.config();
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET: string = process.env.JWT_SECRET || "";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,19 +28,21 @@ app.get("/", (req, res) => {
   });
 });
 
-app.post("/login", (req, res) => {
+app.post("/login", async(req, res) => {
   try {
-    const { email, password } = req.body;
-
     const validateData = loginSchema.safeParse(req.body);
 
     if(!validateData.success){
       return res.status(400).json({message: "email and password are required and must be valid"})
     }
 
-    const existingUser = findUser(email);
+    const {email, password } = validateData.data;
 
-    if (!existingUser || !verifyPassword(password, existingUser.password)) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (!existingUser || !(await verifyPassword(password, existingUser.password))) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
@@ -60,23 +65,38 @@ app.post("/login", (req, res) => {
   }
 });
 
-app.post("/register", (req, res) => {
+app.post("/register", async(req, res) => {
   try {
-    const { email, password } = req.body;
+    
 
     const validateData = registerSchema.safeParse(req.body);
-    console.log(validateData);
 
     if (!validateData.success){
-        return res.status(400).json({message: "All fields are required and must be valid"}
-          ,{other: validateData.error.message})
+        return res.status(400).json({message: "All fields are required and must be valid"})
     }
 
-    if (findUser(email)) {
-      return res.status(400).json({ message: "email already exists" });
+   const { email, password,phone ,address, name } = validateData.data;
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if(existingUser){
+      return res.status(400).json({message: "User with this email already exists"})
     }
 
-    const newUser = addUser({ email, password });
+    const hashedPassword = hashPassword(password);
+
+    const  newUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        address,
+        phone,
+      },
+    })
+
 
     const token = jwt.sign(
       {
@@ -100,3 +120,5 @@ app.post("/register", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+
