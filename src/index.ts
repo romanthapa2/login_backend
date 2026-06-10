@@ -97,7 +97,6 @@ app.post("/register", async(req, res) => {
       },
     })
 
-
     const token = jwt.sign(
       {
         id: newUser.id,
