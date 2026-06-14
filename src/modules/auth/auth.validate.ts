@@ -12,4 +12,6 @@ const registerSchema = loginSchema.extend({
     // gender : z.enum(["male",'female',"other"])
 })
 
+export type LoginInput = z.infer<typeof loginSchema>;
+export type RegisterInput = z.infer<typeof registerSchema>;
 export {loginSchema,registerSchema};
