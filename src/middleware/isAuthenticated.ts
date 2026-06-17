@@ -1,20 +1,30 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../modules/auth/token/token.service";
+import { verify } from "jsonwebtoken";
 
 export const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "unauthorized" });
-    }
+    const token = req.cookies.token;
 
-    const token = authHeader.split(" ")[1];
+    console.log(token);
+    
+    // if (!token?.startsWith("Bearer ")) {
+    //   return res.status(401).json({ message: "unauthorized" });
+    // }
+
+    // const accesstoken = token.split(" ")[1];
 
     if (!token) {
       return res.status(401).json({ message: "unauthorized" });
     }
 
-    req.user = verifyAccessToken(token);
+    const payload= verifyAccessToken(token);
+
+    if(!payload){
+      return res.status(401).json({message: 'unauthorized'});
+    }
+
+    req.user = payload;
     next();
   } catch (error) {
     res.status(401).json({ message: "invalid or expired token" });

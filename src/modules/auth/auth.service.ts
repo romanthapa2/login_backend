@@ -1,4 +1,4 @@
-import { register } from "node:module";
+
 import { prisma } from "../../prisma";
 import { hashPassword, verifyPassword } from "../../users_data";
 import { LoginInput, RegisterInput } from "./auth.validate";
