@@ -1,27 +1,41 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../modules/auth/token/token.service";
-import { verify } from "jsonwebtoken";
+import { prisma } from "../prisma";
 
 export const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = req.cookies.token;
+    let token: string | undefined;
 
-    console.log(token);
-    
-    // if (!token?.startsWith("Bearer ")) {
-    //   return res.status(401).json({ message: "unauthorized" });
-    // }
+    const authHeaders = req.headers.authorization;
 
-    // const accesstoken = token.split(" ")[1];
+    if (!authHeaders?.startsWith("Bearer ")) {
+      token = authHeaders?.split(" ")[1];
+    }
+
+    if (!token) {
+      token = req.cookies?.token;
+    }
 
     if (!token) {
       return res.status(401).json({ message: "unauthorized" });
     }
 
-    const payload= verifyAccessToken(token);
+    const payload = verifyAccessToken(token);
 
-    if(!payload){
-      return res.status(401).json({message: 'unauthorized'});
+    if (!payload) {
+      return res.status(401).json({ message: "unauthorized" });
+    }
+
+    const validateUser = await prisma.user.findUnique({
+      where: {
+        id: payload.id,
+      },
+    });
+
+    if (!validateUser) {
+      return res.status(401).json({
+        message: "User not found",
+      });
     }
 
     req.user = payload;

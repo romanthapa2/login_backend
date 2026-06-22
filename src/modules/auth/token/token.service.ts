@@ -1,17 +1,30 @@
-import jwt,{SignOptions} from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
-export interface JwtPayload{
-  id:number,
-  email:string
+export interface JwtPayload {
+  id: number;
+  email: string;
+}
+
+export interface jwtRefreshPayload {
+  userId: number;
+  tokenId: string;
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || "";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1d";
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "";
 
-export const generateAccessToken = (user:JwtPayload):string =>{
-  return jwt.sign(user, JWT_SECRET, {expiresIn : JWT_EXPIRES_IN as SignOptions['expiresIn']});
-}
+export const generateAccessToken = (user: JwtPayload): string => {
+  return jwt.sign(user, JWT_SECRET);
+};
 
-export const verifyAccessToken = (token: string):JwtPayload =>{
-  return jwt.verify(token,JWT_SECRET) as JwtPayload;
-}
+export const generateRefreshToken = (user: jwtRefreshPayload): string => {
+  return jwt.sign(user, JWT_REFRESH_SECRET);
+};
+
+export const verifyAccessToken = (token: string): JwtPayload => {
+  return jwt.verify(token, JWT_SECRET) as JwtPayload;
+};
+
+export const verifyRefreshToken = (token: string): jwtRefreshPayload => {
+  return jwt.verify(token, JWT_REFRESH_SECRET) as jwtRefreshPayload;
+};

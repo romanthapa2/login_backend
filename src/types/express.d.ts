@@ -1,9 +1,10 @@
-import type { JwtPayload } from "../modules/auth/token/token.service";
+import type { JwtPayload, jwtRefreshPayload } from "../modules/auth/token/token.service";
 
 declare global {
   namespace Express {
     interface Request {
       user?: JwtPayload;
+      verifiedRefreshToken?: jwtRefreshPayload
     }
   }
 }
