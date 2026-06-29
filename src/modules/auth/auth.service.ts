@@ -1,5 +1,6 @@
 import { prisma } from "../../prisma";
 import { hashPassword, verifyPassword } from "../../users_data";
+import { refreshcookieOptions } from "./auth.controller";
 import { LoginInput, RegisterInput } from "./auth.validate";
 
 export const sanitizeUser = (user: any) => ({
@@ -57,10 +58,12 @@ export const registerService = async (registerInput: RegisterInput) => {
 
 export const refreshService = async (userId: number) => {
   const tokenId = crypto.randomUUID();
+  const expirationDate = new Date(Date.now() + (refreshcookieOptions.maxAge!));
   await prisma.refreshToken.create({
     data: {
       tokenId,
       userId,
+      expiredAt:expirationDate
     },
   });
 

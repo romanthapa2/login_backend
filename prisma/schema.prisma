@@ -28,6 +28,7 @@ model User {
 model RefreshToken {
   id        Int      @id @default(autoincrement())
   tokenId   String   @unique
+  expiredAt DateTime
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())

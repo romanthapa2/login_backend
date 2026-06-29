@@ -8,14 +8,14 @@ export const accesscookieOptions: CookieOptions = {
   httpOnly: true,
   secure: true,
   sameSite: "strict",
-  maxAge: 15 * 60 * 1000,
+  maxAge: 40 * 1000,
 };
 
 export const refreshcookieOptions: CookieOptions = {
   httpOnly: true,
   secure: true,
   sameSite: "strict",
-  maxAge: 7 * 24 * 60 * 60 * 1000,
+  maxAge: 80 * 1000,
 };
 
 export const loginController = async (req: Request, res: Response) => {
@@ -77,45 +77,45 @@ export const RegisterController = async (req: Request, res: Response) => {
   }
 };
 
-export const refreshTokenController = async (req: Request, res: Response) => {
-  try {
-    const refreshToken = req.verifiedRefreshToken;
-    if (!refreshToken) {
-      return res.status(401).json({ message: "Refresh token missing." });
-    }
+// export const refreshTokenController = async (req: Request, res: Response) => {
+//   try {
+//     const refreshToken = req.verifiedRefreshToken;
+//     if (!refreshToken) {
+//       return res.status(401).json({ message: "Refresh token missing." });
+//     }
 
-    const refreshdb = await prisma.refreshToken.findUnique({ where: { tokenId: refreshToken.tokenId } });
+//     const refreshdb = await prisma.refreshToken.findUnique({ where: { tokenId: refreshToken.tokenId } });
 
-    if (!refreshdb) {
-      return res.status(401).json({ message: "token not found" });
-    }
+//     if (!refreshdb) {
+//       return res.status(401).json({ message: "token not found" });
+//     }
 
-    await prisma.refreshToken.delete({
-      where: {
-        tokenId: refreshToken.tokenId,
-      },
-    });
+//     await prisma.refreshToken.delete({
+//       where: {
+//         tokenId: refreshToken.tokenId,
+//       },
+//     });
 
-    const tokenId = await refreshService(refreshToken.userId);
+//     const tokenId = await refreshService(refreshToken.userId);
 
-    const newRefreshToken = generateRefreshToken({ userId: refreshToken.userId, tokenId });
+//     const newRefreshToken = generateRefreshToken({ userId: refreshToken.userId, tokenId });
 
-    const user = await prisma.user.findUnique({ where: { id: refreshToken.userId } });
-    if (!user) {
-      return res.status(404).json({ message: "User not found." });
-    }
+//     const user = await prisma.user.findUnique({ where: { id: refreshToken.userId } });
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found." });
+//     }
 
-    const newAccessToken = generateAccessToken({ id: user.id, email: user.email });
+//     const newAccessToken = generateAccessToken({ id: user.id, email: user.email });
 
-    return res
-      .status(200)
-      .cookie("token", newAccessToken, accesscookieOptions)
-      .cookie("refreshToken", newRefreshToken, refreshcookieOptions)
-      .json({ message: "Token refreshed successfully." });
-  } catch (error) {
-    return res.status(401).json({ message: "Invalid or expired refresh session tokens." });
-  }
-};
+//     return res
+//       .status(200)
+//       .cookie("token", newAccessToken, accesscookieOptions)
+//       .cookie("refreshToken", newRefreshToken, refreshcookieOptions)
+//       .json({ message: "Token refreshed successfully." });
+//   } catch (error) {
+//     return res.status(401).json({ message: "Invalid or expired refresh session tokens." });
+//   }
+// };
 
 export const getme = async (req: Request, res: Response) => {
   try {
