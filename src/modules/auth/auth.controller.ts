@@ -2,7 +2,10 @@ import { loginSchema, registerSchema } from "./auth.validate";
 import { CookieOptions, Request, Response } from "express";
 import { loginService, refreshService, registerService } from "./auth.service";
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "./token/token.service";
-import { prisma } from "../../prisma";
+import { getTenantPrisma } from "../../database/tenant-client";
+import { asyncHandler } from "../../../utils/asyncHandler";
+import { ApiError } from "../../../utils/apiError";
+import { apiResponse } from "../../../utils/apiResponse";
 
 export const accesscookieOptions: CookieOptions = {
   httpOnly: true,
@@ -18,64 +21,45 @@ export const refreshcookieOptions: CookieOptions = {
   maxAge: 80 * 1000,
 };
 
-export const loginController = async (req: Request, res: Response) => {
-  try {
-    const validateInput = loginSchema.safeParse(req.body);
+export const loginController = asyncHandler(async (req: Request, res: Response) => {
+  const validateInput = loginSchema.safeParse(req.body);
 
-    if (!validateInput.success) {
-      return res.json("please enter a valid credentials");
-    }
-
-    const user = await loginService(validateInput.data);
-
-    const tokenId = await refreshService(user.id);
-
-    const token = generateAccessToken({ id: user.id, email: user.email });
-
-    const refreshToken = generateRefreshToken({ userId: user.id, tokenId });
-
-    return res
-      .status(200)
-      .cookie("token", token, accesscookieOptions)
-      .cookie("refreshToken", refreshToken, refreshcookieOptions)
-      .json({
-        message: "login successful",
-        user,
-      });
-  } catch (error) {
-    return res.status(400).json("something went wrong");
+  if (!validateInput.success) {
+    throw new ApiError(400, "all fields are required and must be valid");
   }
-};
 
-export const RegisterController = async (req: Request, res: Response) => {
-  try {
-    const validateInput = registerSchema.safeParse(req.body);
+  const user = await loginService(validateInput.data);
 
-    if (!validateInput.success) {
-      return res.status(400).json({
-        message: "all fields are required and must be valid",
-      });
-    }
+  const tokenId = await refreshService(user.id);
 
-    const user = await registerService(validateInput.data);
+  const token = generateAccessToken({ id: user.id, email: user.email });
 
-    const tokenId = await refreshService(user.id);
-    const token = generateAccessToken({ id: user.id, email: user.email });
+  const refreshToken = generateRefreshToken({ userId: user.id, tokenId });
 
-    const refreshToken = generateRefreshToken({ userId: user.id, tokenId });
+  res.cookie("token",token, accesscookieOptions).cookie("refreshToken", refreshToken, refreshcookieOptions);
 
-    return res
-      .status(201)
-      .cookie("token", token, accesscookieOptions)
-      .cookie("refreshToken", refreshToken, refreshcookieOptions)
-      .json({
-        message: "User registered successfully",
-        user,
-      });
-  } catch {
-    return res.status(500).json({ message: "server error" });
+  return apiResponse(res, 200, "login successful", { user });
+});
+
+export const RegisterController = asyncHandler(async (req: Request, res: Response) => {
+  const validateInput = registerSchema.safeParse(req.body);
+
+  if (!validateInput.success) {
+    throw new ApiError(400, "all fields are required and must be valid");
   }
-};
+
+  const user = await registerService(validateInput.data);
+
+  const tokenId = await refreshService(user.id);
+  const token = generateAccessToken({ id: user.id, email: user.email });
+
+  const refreshToken = generateRefreshToken({ userId: user.id, tokenId });
+
+
+  res.cookie("token",token, accesscookieOptions).cookie("refreshToken", refreshToken, refreshcookieOptions);
+
+  return apiResponse(res, 201, "user created successfully", { user });
+});
 
 // export const refreshTokenController = async (req: Request, res: Response) => {
 //   try {
@@ -117,17 +101,14 @@ export const RegisterController = async (req: Request, res: Response) => {
 //   }
 // };
 
-export const getme = async (req: Request, res: Response) => {
-  try {
-    const user = req.user;
-    const getUserinfo = await prisma.user.findUnique({
-      where: {
-        email: user?.email,
-      },
-    });
+export const getme = asyncHandler(async (req: Request, res: Response) => {
+  const prisma = await getTenantPrisma();
+  const user = req.user;
+  const getUserinfo = await prisma.user.findUnique({
+    where: {
+      email: user?.email,
+    },
+  });
 
-    return res.status(200).json(getUserinfo);
-  } catch {
-    return res.status(500).json({ message: "server error" });
-  }
-};
+  return apiResponse(res, 200, "user info fetched successfully", getUserinfo);
+});

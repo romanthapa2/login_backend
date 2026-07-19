@@ -8,5 +8,7 @@ dist
 learnings
 dist
 
+/prisma/migrate
+/migrate
 
 

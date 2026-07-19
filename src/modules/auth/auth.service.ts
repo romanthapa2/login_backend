@@ -1,4 +1,5 @@
-import { prisma } from "../../prisma";
+import { ApiError } from "../../../utils/apiError";
+import {getTenantPrisma} from "../../database/tenant-client";
 import { hashPassword, verifyPassword } from "../../users_data";
 import { refreshcookieOptions } from "./auth.controller";
 import { LoginInput, RegisterInput } from "./auth.validate";
@@ -12,6 +13,7 @@ export const sanitizeUser = (user: any) => ({
 });
 
 export const loginService = async (logininput: LoginInput) => {
+  const prisma = await getTenantPrisma();
   const user = await prisma.user.findUnique({
     where: {
       email: logininput.email,
@@ -19,18 +21,19 @@ export const loginService = async (logininput: LoginInput) => {
   });
 
   if (!user) {
-    throw new Error("User does not exist. please register first");
+    throw new ApiError(401,"User does not exist. please register first");
   }
 
-  if (!verifyPassword(logininput.password, user.password)) {
-    throw new Error("incorrect password");
+  if (!verifyPassword(logininput.password, user.passwordHash)) {
+    throw new ApiError(401,"incorrect password");
   }
 
   return sanitizeUser(user);
 };
 
 export const registerService = async (registerInput: RegisterInput) => {
-  const { name, email, password, phone, address } = registerInput;
+  const prisma = await getTenantPrisma();
+  const { name, email, password } = registerInput;
   const user = await prisma.user.findUnique({
     where: {
       email,
@@ -38,7 +41,7 @@ export const registerService = async (registerInput: RegisterInput) => {
   });
 
   if (user) {
-    throw new Error("user already exists. please login");
+    throw new ApiError(409,"user already exists. please login");
   }
 
   const hashedPassword = hashPassword(password);
@@ -47,9 +50,8 @@ export const registerService = async (registerInput: RegisterInput) => {
     data: {
       email,
       name,
-      password: hashedPassword,
-      phone,
-      address,
+      passwordHash: hashedPassword,
+      role: "ADMIN",
     },
   });
 
@@ -57,6 +59,7 @@ export const registerService = async (registerInput: RegisterInput) => {
 };
 
 export const refreshService = async (userId: number) => {
+  const prisma = await getTenantPrisma();
   const tokenId = crypto.randomUUID();
   const expirationDate = new Date(Date.now() + (refreshcookieOptions.maxAge!));
   await prisma.refreshToken.create({

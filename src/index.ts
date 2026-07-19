@@ -3,6 +3,8 @@ import cors from "cors";
 import helmet from "helmet";
 import authRouter from "./modules/auth/auth.routes";
 import cookieParser from "cookie-parser";
+import { globalErrorHandler } from "./middleware/errorHandler";
+import { tenantMiddleware } from "./database/tenant-client";
 
 
 
@@ -23,7 +25,11 @@ app.get("/", (req, res) => {
   });
 });
 
+app.use(tenantMiddleware());
+
 app.use(authRouter);
+
+app.use(globalErrorHandler)
 
 
 app.listen(PORT, () => {

@@ -10,4 +10,11 @@
  */
 export type * from './models/User'
 export type * from './models/RefreshToken'
+export type * from './models/RestaurantTable'
+export type * from './models/Customer'
+export type * from './models/Category'
+export type * from './models/MenuItem'
+export type * from './models/Order'
+export type * from './models/OrderItem'
+export type * from './models/Payment'
 export type * from './commonInputTypes'

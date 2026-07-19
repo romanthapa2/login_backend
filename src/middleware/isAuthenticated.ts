@@ -5,11 +5,14 @@ import {
   verifyAccessToken,
   verifyRefreshToken,
 } from "../modules/auth/token/token.service";
-import { prisma } from "../prisma";
+import {getTenantPrisma} from "../database/tenant-client";
 import { accesscookieOptions, refreshcookieOptions } from "../modules/auth/auth.controller";
 import { refreshService } from "../modules/auth/auth.service";
 
+
 const authenticateWithRefresh = async (req: Request, res: Response, next: NextFunction) => {
+
+  const prisma = await getTenantPrisma();
   const refreshToken = req.cookies?.refreshToken;
 
   if (!refreshToken) {
